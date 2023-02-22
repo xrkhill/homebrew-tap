@@ -1,42 +1,35 @@
 class Mpv < Formula
   desc "Media player based on MPlayer and mplayer2"
   homepage "https://mpv.io"
-  url "https://github.com/mpv-player/mpv/archive/v0.35.0.tar.gz"
-  sha256 "dc411c899a64548250c142bf1fa1aa7528f1b4398a24c86b816093999049ec00"
+  url "https://github.com/mpv-player/mpv/archive/v0.34.1.tar.gz"
+  sha256 "32ded8c13b6398310fa27767378193dc1db6d78b006b70dbcbd3123a1445e746"
   license :cannot_represent
   head "https://github.com/mpv-player/mpv.git", branch: "master"
 
   bottle do
-    sha256 arm64_ventura:  "68bf624f6b6225aff7a18e7ebf133f6a2f0d81227a1a9122e327c8df980f1186"
-    sha256 arm64_monterey: "796101aafdfcab4e4e583b106913f2a6eaa9ec457b59231d3474f44564930d77"
-    sha256 arm64_big_sur:  "d3c50d2df9634d918459aac2b48203f203efdc1e2b7ec385db54186c7923074f"
-    sha256 ventura:        "84bd369996a53ea59179b0388074b89acdacf8b67ecc9858d4d67e9bb8677872"
-    sha256 monterey:       "4bf17644be73ef2e0b5d9029a73ccbab14e46f8af6f331ae5ef5329b33be4ab5"
-    sha256 big_sur:        "a7ede2a10b6bc0b59d980f5d731a221fdd0dc450fd909e594e8c877031e72a7f"
-    sha256 catalina:       "9b4b79cfceb6ed515080e7094fcb3361dab288ba4541f7d9f0ea9176d34a6445"
-    sha256 x86_64_linux:   "9123423529705479772f97524aff7c8a6536733ca47d3c823c7c0b7cbdb1db94"
+    sha256 arm64_monterey: "a5b475a71a31ad4158fc535872120d0a6ffd4328fc73c1aacf71c97acd75ae1a"
+    sha256 arm64_big_sur:  "0fa381a795007043839aa1fea6c8ac09a129a43b45951b32ee7153876b70166b"
+    sha256 monterey:       "e0258c0434a62f844135e589d2ba2718095481bb3e0cbc19165c0b389bc106bd"
+    sha256 big_sur:        "93c670a01116d34ccddac558f0e94586e61af8f5a5ed32fa257292e82bd99ea2"
+    sha256 catalina:       "6ce8b624d2f299bbfa38a8a05e66265e333ea22dc33011714f2747670d84338c"
+    sha256 x86_64_linux:   "b7d5900e4a201689c18c79adb4eaf0553ded5d70f3ab52b2c5adbf1c306244ab"
   end
 
   depends_on "docutils" => :build
   depends_on "pkg-config" => :build
-  depends_on "python@3.10" => :build
+  depends_on "python@3.9" => :build
   depends_on xcode: :build
+
   depends_on "ffmpeg"
-  depends_on "jpeg-turbo"
+  depends_on "jpeg"
   depends_on "libarchive"
   depends_on "libass"
   depends_on "little-cms2"
-  depends_on "luajit"
+  depends_on "luajit-openresty"
   depends_on "mujs"
   depends_on "uchardet"
   depends_on "vapoursynth"
   depends_on "yt-dlp"
-
-  on_linux do
-    depends_on "alsa-lib"
-  end
-
-  fails_with gcc: "5" # ffmpeg is compiled with GCC
 
   def install
     # LANG is unset by default on macOS and causes issues when calling getlocale
@@ -44,16 +37,10 @@ class Mpv < Formula
     # that's good enough for building the manpage.
     ENV["LC_ALL"] = "C"
 
-    # Avoid unreliable macOS SDK version detection
-    # See https://github.com/mpv-player/mpv/pull/8939
-    if OS.mac?
-      sdk = (MacOS.version == :big_sur) ? MacOS::Xcode.sdk : MacOS.sdk
-      ENV["MACOS_SDK"] = sdk.path
-      ENV["MACOS_SDK_VERSION"] = "#{sdk.version}.0"
-    end
-
     # libarchive is keg-only
     ENV.prepend_path "PKG_CONFIG_PATH", Formula["libarchive"].opt_lib/"pkgconfig"
+    # luajit-openresty is keg-only
+    ENV.prepend_path "PKG_CONFIG_PATH", Formula["luajit-openresty"].opt_lib/"pkgconfig"
 
     args = %W[
       --prefix=#{prefix}
@@ -71,10 +58,9 @@ class Mpv < Formula
       --lua=luajit
     ]
 
-    python3 = "python3.10"
-    system python3, "bootstrap.py"
-    system python3, "waf", "configure", *args
-    system python3, "waf", "install"
+    system Formula["python@3.9"].opt_bin/"python3", "bootstrap.py"
+    system Formula["python@3.9"].opt_bin/"python3", "waf", "configure", *args
+    system Formula["python@3.9"].opt_bin/"python3", "waf", "install"
   end
 
   test do
